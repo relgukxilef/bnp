@@ -10,6 +10,7 @@
 #include <string_view>
 #include <string>
 #include <stdexcept>
+#include <random>
 
 using namespace std;
 using namespace boost::uuids;
@@ -115,8 +116,15 @@ void visit(auto &&v, arguments &args) {
         "A domain name that is used to create a UUID in the DNS namespace, "
         "which is then used as the namespace to create a version 5 UUID."
     );
+    argument(
+        v, "node", args.node, 
+        "A UUID to take the node identifier from when "
+        "creating a time based UUID."
+    );
     flag(
-        v, "uuid1", args.uuid1, "Create a time-based UUID. Requires node."
+        v, "uuid1", args.uuid1, 
+        "Create a time-based UUID. If node is a UUID, "
+        "create a UUID for the same node."
     );
     flag(v, "uuid4", args.uuid4, "Create a random UUID.");
     flag(
@@ -138,7 +146,20 @@ int main(int argc, const char *argv[]) {
         return -1;
     }
 
-    if (a.uuid4) {
+    if (a.uuid1) {
+        if (a.node.empty()) {
+            cout << time_generator_v1()() << endl;
+        } else {
+            random_device r;
+            time_generator_v1::state_type state{
+                .timestamp = 0,
+                .clock_seq = (uint16_t)r(),
+            };
+            auto node = boost::lexical_cast<uuid>(a.node).node_identifier();
+            cout << time_generator_v1(node, state)() << endl;
+        }
+        
+    } else if (a.uuid4) {
         cout << random_generator()() << endl;
 
     } else if (a.uuid5) {
@@ -149,6 +170,7 @@ int main(int argc, const char *argv[]) {
             uuid_namespace = boost::lexical_cast<uuid>(a.uuid_namespace);
         }
         cout << name_generator_sha1(uuid_namespace)(a.name.data()) << endl;
+
     }
 
     return 0;
