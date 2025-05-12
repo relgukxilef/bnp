@@ -165,7 +165,10 @@ int main(int argc, const char *argv[]) {
                 .timestamp = 0,
                 .clock_seq = (uint16_t)r(),
             };
-            auto node = boost::lexical_cast<uuid>(a.node).node_identifier();
+            auto node_uuid = boost::lexical_cast<uuid>(a.node);
+            if (node_uuid.version() != 1 && node_uuid.version() != 6)
+                cerr << "UUID does not have a node-identifier." << endl;
+            auto node = node_uuid.node_identifier();
             cout << time_generator_v1(node, state)() << endl;
         }
         
