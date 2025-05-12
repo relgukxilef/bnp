@@ -24,8 +24,7 @@ struct command_line_parser {
     command_line_parser(const char *const *argv) {
         argv++;
         this->argv = argv;
-        if (*argv)
-            arg = *argv;
+        parse_argument();
     }
     operator bool() const {
         return *argv != nullptr;
@@ -35,9 +34,18 @@ struct command_line_parser {
             throw runtime_error(string("Unrecognized argument ") + string(arg));
         consumed = false;
         argv++;
-        if (*this)
-            arg = *argv;
+        parse_argument();
         return *this;
+    }
+    void parse_argument() {
+        if (!*argv) {
+            arg = {};
+            return;
+        }
+        arg = *argv;
+        dashed = (arg.substr(0, 2) == "--");
+        if (dashed)
+            arg = arg.substr(2);
     }
     string_view value() {
         // to read key-value pairs
@@ -51,12 +59,13 @@ struct command_line_parser {
     const char *const *argv;
     string_view arg;
     bool consumed = false;
+    bool dashed = false;
 };
 
 void flag(
     command_line_parser &p, string_view n, bool &f, string_view description
 ) {
-    if (n != p.arg)
+    if (!p.dashed || n != p.arg)
         return;
     f = true;
     p.consumed = true;
@@ -66,7 +75,7 @@ void argument(
     command_line_parser &p, string_view n, string_view &s, 
     string_view description
 ) {
-    if (n != p.arg)
+    if (!p.dashed || n != p.arg)
         return;
     s = p.value();
     p.consumed = true;
@@ -86,14 +95,15 @@ struct help_printer {
 void flag(
     help_printer &p, string_view n, bool &f, string_view description
 ) {
-    cout << n << endl << "\t" << description << endl;
+    cout << "--" << n << endl << "\t" << description << endl;
 }
 
 void argument(
     help_printer &p, string_view n, string_view &s, 
     string_view description
 ) {
-    cout << n << " [" << n << ']' << endl << "\t" << description << endl;
+    cout << 
+        "--" << n << " [" << n << ']' << endl << "\t" << description << endl;
 }
 
 struct arguments {
@@ -165,11 +175,11 @@ int main(int argc, const char *argv[]) {
     } else if (a.uuid5) {
         uuid uuid_namespace;
         if (a.uuid_namespace.empty()) {
-            uuid_namespace = name_generator_sha1(ns::dns())(a.domain.data());
+            uuid_namespace = name_generator_sha1(ns::dns())(string(a.domain));
         } else {
             uuid_namespace = boost::lexical_cast<uuid>(a.uuid_namespace);
         }
-        cout << name_generator_sha1(uuid_namespace)(a.name.data()) << endl;
+        cout << name_generator_sha1(uuid_namespace)(string(a.name)) << endl;
 
     }
 
