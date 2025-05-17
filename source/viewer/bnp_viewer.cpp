@@ -141,6 +141,11 @@ void visit(auto &&v, arguments &args) {
         v, "uuid5", args.uuid5, 
         "Create a name-based UUID. Requires name and domain or namespace."
     );
+    
+    flag(
+        v, "help", args.help, 
+        "Print help."
+    );
 }
 
 int main(int argc, const char *argv[]) {
@@ -151,6 +156,7 @@ int main(int argc, const char *argv[]) {
         cout << e.what() << endl;
         a.help = true;
     }
+
     if (a.help) {
         visit_object(help_printer(), a);
         return -1;
@@ -184,7 +190,10 @@ int main(int argc, const char *argv[]) {
         }
         cout << name_generator_sha1(uuid_namespace)(string(a.name)) << endl;
 
+    } else {
+        visit_object(help_printer(), a);
+        return -1;
     }
-
+    
     return 0;
 }
