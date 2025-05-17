@@ -1,8 +1,8 @@
 #include <bnp/bnp.h>
 
-#include <array>
-
 #include "../test/test.h"
+
+#include <array>
 
 using namespace std;
 
@@ -23,11 +23,12 @@ namespace bnp {
     unsigned leb128(const_view &bytes) {
         auto sum = 0u;
         auto shift = 0u;
+        auto value = 0u;
         do {
-            auto value = byte(bytes);
+            value = byte(bytes);
             sum += (value & 0x7f) << shift;
             shift += 7;
-        } while (sum >= 128);
+        } while (value >= 128);
         return sum;
     }
 
@@ -61,17 +62,33 @@ namespace bnp {
     connection initial_client_message(
         const schema server_schema, const_view &bytes
     );
-    
- 
+
+
+    template<class T, std::size_t N>
+    constexpr std::size_t size(const T (&array)[N]) noexcept {
+        return N;
+    }
+
     test leb128_test([](){
-        array<uint8_t, 4> buffer;
-        view buffer_view{data(buffer), size(buffer)};
-        auto bytes = buffer_view;
-        leb128(42, bytes);
-        const_view buffer_const_view{data(buffer), size(buffer)};
-        checked(42) == leb128(buffer_const_view);
-        checked(buffer[0]) == 42;
-        checked(bytes.size) == 3;
-        checked(buffer_const_view.size) == 3;
+        unsigned examples[] = {
+            0,
+            42,
+            127,
+            128,
+            192,
+            16384,
+            268435455,
+        };
+        uint8_t buffer[4];
+        
+        for (int i = 0; i < size(examples); i++) {
+            auto value = examples[i];
+            view buffer_view{buffer, size(buffer)};
+            auto bytes = buffer_view;
+            leb128(value, bytes);
+            const_view buffer_const_view{buffer, size(buffer)};
+            checked(value) == leb128(buffer_const_view);
+            checked(bytes.size) == buffer_const_view.size;
+        }
     });
 }
