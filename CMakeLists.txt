@@ -8,19 +8,12 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 option(BNP_BUILD_TOOLS "Build tools, instead of just the library" ON)
 
 add_library(
-    bnp_core STATIC
+    bnp OBJECT
     include/bnp/bnp.h source/bnp/bnp.cpp
     source/test/test.h source/test/test.cpp
 )
 
-add_library(
-    bnp SHARED
-    include/bnp/bnp.h
-)
-
-target_link_libraries(bnp PUBLIC bnp_core)
-
-target_include_directories(bnp_core PUBLIC include)
+target_include_directories(bnp PUBLIC include)
 
 
 if(BNP_BUILD_TOOLS)
@@ -50,8 +43,7 @@ if(BNP_BUILD_TOOLS)
         source/test/test_main.cpp
     )
 
-    target_link_libraries(tests PRIVATE bnp_core)
-    target_link_options(tests PUBLIC /WHOLEARCHIVE:bnp_core)
+    target_link_libraries(tests PRIVATE bnp)
 
     enable_testing()
 
